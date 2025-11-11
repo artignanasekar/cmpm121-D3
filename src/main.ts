@@ -1,5 +1,10 @@
+// - map + setup: create a leaflet map centered on the fixed classroom location and initialize the game state with the player at that spot
+// - cell rendering: draw the whole visible grid of cells (w/ their tokens contents) on the map
+// - interaction wiring, listen for map clicks, figure out which cell was clicked, picking/crafting rules, re-render cells and inventory
+// - inventory ui, player's currently held token is always shown on screen
+
 // leaflet is loaded via <script> tag in index.html, so treat it as a global.
-declare const L: any;
+declare const L: typeof import("leaflet");
 
 // simple deterministic pseudo-random function: same seed -> same value in [0,1)
 function luck(seed: number): number {
@@ -34,10 +39,10 @@ type CellOverride = Partial<CellContent>;
 const cellOverrides = new Map<string, CellOverride>();
 
 // token label markers: one per cell that currently has a token.
-const tokenMarkers = new Map<string, any>();
+const tokenMarkers = new Map<string, L.Marker>();
 
 // grid cell rectangles currently rendered on the map (only for visible area).
-const cellRects = new Map<string, any>();
+const cellRects = new Map<string, L.Rectangle>();
 
 // player state
 let playerLat = PLAYER_START_LAT;
@@ -226,7 +231,7 @@ function updateCellAppearance(row: number, col: number): void {
   const dist = cellDistance(row, col, playerRow, playerCol);
   const isNear = dist <= CLICK_RADIUS_CELLS;
 
-  const baseStyle: any = {
+  const baseStyle: L.PathOptions = {
     color: "#007bff",
     weight: 1,
     opacity: isNear ? 0.9 : 0.25,
@@ -308,7 +313,7 @@ function handleCellClick(row: number, col: number): void {
     return;
   }
 
-  // other combinations do nothing for now.
+  // other combinations do nothing for now. (will implement later on)
 }
 
 function movePlayer(deltaRow: number, deltaCol: number): void {
@@ -322,7 +327,7 @@ function movePlayer(deltaRow: number, deltaCol: number): void {
   playerMarker.setLatLng([playerLat, playerLng]);
   map.panTo([playerLat, playerLng], { animate: true });
 
-  // update appearance of nearby cells so the near/far styling stays correct.
+  // update appearance of nearby cells so the near/far styling stays correct. sizing stays consistent.
   for (const k of cellRects.keys()) {
     const [rStr, cStr] = k.split(",");
     const r = Number(rStr);
