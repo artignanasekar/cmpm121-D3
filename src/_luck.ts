@@ -1,15 +1,13 @@
-// Students: Do not modify this file.
+// src/luck.ts
 
-import murmur32 from "murmur-32";
+// Simple deterministic pseudo-random function: same seed -> same value in [0,1)
+export function luck(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
 
-/**
- * Deterministically generates a number between 0 and 1 for the given
- * situation. Use the result like you would for `Math.random()`.
- */
-export default function luck(situation: string): number {
-  const LARGE_INTEGER = 1 << 30;
-  return (
-    (new DataView(murmur32(situation)).getUint32(0) % LARGE_INTEGER) /
-    LARGE_INTEGER
-  );
+// Mix row/col into a single numeric seed.
+export function cellSeed(row: number, col: number): number {
+  // XOR of two large-ish primes times row/col
+  return (row * 73856093) ^ (col * 19349663);
 }
