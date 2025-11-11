@@ -1,115 +1,68 @@
-// @deno-types="npm:@types/leaflet"
-import leaflet from "leaflet";
+// src/main.ts
 
-// Style sheets
-import "leaflet/dist/leaflet.css"; // supporting style for Leaflet
-import "./style.css"; // student-controlled page style
+import { attachInputHandlers } from "./game/input.ts";
+import { updateGame } from "./game/logic.ts";
+import { render } from "./game/render.ts";
+import { createInitialState } from "./game/state.ts";
+import "./style.css";
 
-// Fix missing marker images
-import "./_leafletWorkaround.ts"; // fixes for missing Leaflet images
+// Create a root container for the game UI
+const root = document.createElement("div");
+root.id = "game-root";
 
-// Import our luck function
-import luck from "./_luck.ts";
+// Clear any existing HTML and attach our root
+document.body.innerHTML = "";
+document.body.appendChild(root);
 
-// Create basic UI elements
+// Optional title / debug text
+const title = document.createElement("h1");
+title.textContent = "D3 Core Mechanics Prototype";
+title.style.margin = "0 0 4px";
+title.style.fontSize = "1rem";
+root.appendChild(title);
 
-const controlPanelDiv = document.createElement("div");
-controlPanelDiv.id = "controlPanel";
-document.body.append(controlPanelDiv);
+// Optional instructions
+const instructions = document.createElement("p");
+instructions.textContent =
+  "Use ← → to move, ↑ or Space to jump. (You can customize this later!)";
+instructions.style.margin = "0 0 8px";
+instructions.style.fontSize = "0.85rem";
+root.appendChild(instructions);
 
-const mapDiv = document.createElement("div");
-mapDiv.id = "map";
-document.body.append(mapDiv);
+// Create the canvas where we render the game
+const canvas = document.createElement("canvas");
+canvas.width = 480;
+canvas.height = 320;
+root.appendChild(canvas);
 
-const statusPanelDiv = document.createElement("div");
-statusPanelDiv.id = "statusPanel";
-document.body.append(statusPanelDiv);
+const ctx = canvas.getContext("2d");
+if (!ctx) {
+  throw new Error("Could not get 2D canvas context");
+}
 
-// Our classroom location
-const CLASSROOM_LATLNG = leaflet.latLng(
-  36.997936938057016,
-  -122.05703507501151,
-);
+// ---- GAME STATE ----
+let state = createInitialState();
 
-// Tunable gameplay parameters
-const GAMEPLAY_ZOOM_LEVEL = 19;
-const TILE_DEGREES = 1e-4;
-const NEIGHBORHOOD_SIZE = 8;
-const CACHE_SPAWN_PROBABILITY = 0.1;
-
-// Create the map (element with id "map" is defined in index.html)
-const map = leaflet.map(mapDiv, {
-  center: CLASSROOM_LATLNG,
-  zoom: GAMEPLAY_ZOOM_LEVEL,
-  minZoom: GAMEPLAY_ZOOM_LEVEL,
-  maxZoom: GAMEPLAY_ZOOM_LEVEL,
-  zoomControl: false,
-  scrollWheelZoom: false,
+// Hook up keyboard → intent queue
+attachInputHandlers(window, (intent) => {
+  state.pendingIntents.push(intent);
 });
 
-// Populate the map with a background tile layer
-leaflet
-  .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution:
-      '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  })
-  .addTo(map);
+// ---- MAIN GAME LOOP ----
+let lastTime = performance.now();
 
-// Add a marker to represent the player
-const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
-playerMarker.bindTooltip("That's you!");
-playerMarker.addTo(map);
+function frame(now: number) {
+  const dt = (now - lastTime) / 1000; // seconds
+  lastTime = now;
 
-// Display the player's points
-let playerPoints = 0;
-statusPanelDiv.innerHTML = "No points yet...";
+  // Core mechanics step
+  state = updateGame(state, dt);
 
-// Add caches to the map by cell numbers
-function spawnCache(i: number, j: number) {
-  // Convert cell numbers into lat/lng bounds
-  const origin = CLASSROOM_LATLNG;
-  const bounds = leaflet.latLngBounds([
-    [origin.lat + i * TILE_DEGREES, origin.lng + j * TILE_DEGREES],
-    [origin.lat + (i + 1) * TILE_DEGREES, origin.lng + (j + 1) * TILE_DEGREES],
-  ]);
+  // Draw current state
+  render(ctx, state);
 
-  // Add a rectangle to the map to represent the cache
-  const rect = leaflet.rectangle(bounds);
-  rect.addTo(map);
-
-  // Handle interactions with the cache
-  rect.bindPopup(() => {
-    // Each cache has a random point value, mutable by the player
-    let pointValue = Math.floor(luck([i, j, "initialValue"].toString()) * 100);
-
-    // The popup offers a description and button
-    const popupDiv = document.createElement("div");
-    popupDiv.innerHTML = `
-                <div>There is a cache here at "${i},${j}". It has value <span id="value">${pointValue}</span>.</div>
-                <button id="poke">poke</button>`;
-
-    // Clicking the button decrements the cache's value and increments the player's points
-    popupDiv
-      .querySelector<HTMLButtonElement>("#poke")!
-      .addEventListener("click", () => {
-        pointValue--;
-        popupDiv.querySelector<HTMLSpanElement>("#value")!.innerHTML =
-          pointValue.toString();
-        playerPoints++;
-        statusPanelDiv.innerHTML = `${playerPoints} points accumulated`;
-      });
-
-    return popupDiv;
-  });
+  requestAnimationFrame(frame);
 }
 
-// Look around the player's neighborhood for caches to spawn
-for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
-  for (let j = -NEIGHBORHOOD_SIZE; j < NEIGHBORHOOD_SIZE; j++) {
-    // If location i,j is lucky enough, spawn a cache!
-    if (luck([i, j].toString()) < CACHE_SPAWN_PROBABILITY) {
-      spawnCache(i, j);
-    }
-  }
-}
+// Start the loop
+requestAnimationFrame(frame);
