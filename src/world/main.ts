@@ -3,12 +3,12 @@ import { latLngToCellId } from "./grid.ts";
 import { World } from "./map.ts";
 import type { GameState } from "./state.ts";
 
-// --- initial game state ---
+// initial game state
 const state: GameState = {
-  cellSizeDeg: 0.01, // grid size (~1.1 km per cell at equator) — tweak as needed
-  interactRadius: 3, // cells in Manhattan distance
-  targetValue: 6, // win condition: craft value >= 6
-  playerLL: { lat: 0.002, lng: 0.002 }, // start near Null Island (visible land-less ocean)
+  cellSizeDeg: 0.002, // denser than 0.01, tweak to after implementing movement
+  interactRadius: 3, // cells (Manhattan)
+  targetValue: 6, // win condition
+  playerLL: { lat: 0.002, lng: 0.002 }, // start near Null Island
   playerCell: { i: 0, j: 0 },
   held: null,
   bag: [],
@@ -22,7 +22,7 @@ state.playerCell = latLngToCellId(state.playerLL, state.cellSizeDeg);
 const world = new World(state, document.getElementById("map")!);
 world.updateHUD();
 
-// --- movement controls: move one grid step per press ---
+// movement (one grid shift (up down left right)
 function move(di: number, dj: number) {
   const lat = state.playerLL.lat + di * state.cellSizeDeg;
   const lng = state.playerLL.lng + dj * state.cellSizeDeg;
@@ -42,9 +42,8 @@ document.getElementById("craft")!.addEventListener("click", () => {
   world.updateHUD();
 });
 
-// drop held onto the player's current cell (if an interactable visible cell exists)
+// drop helper to help nudge user to click a cell nearby
 document.getElementById("drop")!.addEventListener("click", () => {
-  // hint: clicking a cell does drop; this helper just recenters and nudges users
   world.recenterOnPlayer();
   document.getElementById("status")!.textContent =
     "click a nearby cell to drop";
