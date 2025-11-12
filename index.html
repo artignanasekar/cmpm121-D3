@@ -1,105 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <title>World of Bits – D3</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <!-- Leaflet CSS -->
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      crossorigin=""
+    <meta charset="utf-8" />
+    <title>where's waldo — prototype</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, user-scalable=no"
     />
-
     <style>
-      html,
-      body {
+      html, body {
+        height: 100%;
         margin: 0;
-        padding: 0;
-        height: 100%;
+        background: #0e1013;
       }
-
-      #app {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        font-family:
-          system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
-      }
-
-      #map {
-        flex: 1 1 auto;
+      #game {
         width: 100%;
+        height: 100%;
       }
-
-      #hud {
-        flex: 0 0 auto;
-        padding: 8px 12px;
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        background: rgba(255, 255, 255, 0.95);
-        border-top: 1px solid #ccc;
-        font-size: 14px;
-      }
-
-      .hud-section {
-        white-space: nowrap;
-      }
-
-      .hud-section strong {
-        font-weight: 600;
-      }
-
-      .token-label div {
-        width: 26px;
-        height: 26px;
-        line-height: 26px;
-        text-align: center;
-        border-radius: 4px;
-        border: 1px solid #007bff;
-        background: rgba(0, 123, 255, 0.95);
-        color: white;
+      .tip {
+        position: fixed;
+        left: 12px;
+        bottom: 12px;
+        color: #c8d1ff;
+        font-family:
+          ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Helvetica;
         font-size: 12px;
-        font-weight: 700;
-        box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
-      }
-
-      .leaflet-container {
-        background: #dfeffb;
+        opacity: 0.8;
+        user-select: none;
       }
     </style>
   </head>
   <body>
-    <div id="app">
-      <div id="map"></div>
-      <div id="hud">
-        <div class="hud-section">
-          <strong>Score:</strong> <span id="score">0</span>
-        </div>
-        <div class="hud-section">
-          <strong>Holding:</strong> <span id="holding">nothing</span>
-        </div>
-        <div class="hud-section">
-          Drag the map, then click squares within ~3 cells of the marker. Move
-          marker with arrow keys.
-        </div>
-      </div>
-    </div>
+    <div id="game"></div>
+    <div class="tip">drag to pan • wheel/pinch to zoom • click targets</div>
 
-    <!-- Leaflet JS (global L variable) -->
     <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-      crossorigin=""
+      src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"
     ></script>
-
-    <!-- Your TypeScript entry point (Vite / Deno task will build this) -->
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="./main.js"></script>
   </body>
 </html>
