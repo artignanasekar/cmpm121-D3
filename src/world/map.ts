@@ -1,3 +1,4 @@
+import { L } from "../_leafletWorkaround.ts";
 import {
   cellIdToBounds,
   cellKey,
@@ -17,7 +18,6 @@ export class World {
   private visible = new Map<string, Cell>();
 
   constructor(readonly state: GameState, mount: HTMLElement) {
-    // Initialize map centered near the player's lat/lng
     this.map = L.map(mount, { worldCopyJump: true, preferCanvas: true })
       .setView([state.playerLL.lat, state.playerLL.lng], 17);
 
@@ -38,15 +38,15 @@ export class World {
         fillColor: "#9df",
         fillOpacity: 0.9,
       },
-    ).addTo(this.map).bindTooltip("you", {
-      permanent: true,
-      direction: "top",
-      offset: L.point(0, -8),
-    });
+    )
+      .addTo(this.map)
+      .bindTooltip("you", {
+        permanent: true,
+        direction: "top",
+        offset: L.point(0, -8),
+      });
 
-    // Render whenever the map stops moving or zooming
     this.map.on("moveend zoomend", () => this.refresh());
-    // Initial render
     this.refresh();
   }
 
@@ -62,7 +62,7 @@ export class World {
     this.state.playerLL = ll;
     this.state.playerCell = latLngToCellId(ll, this.state.cellSizeDeg);
     this.playerMarker.setLatLng([ll.lat, ll.lng]);
-    this.refresh(); // update interaction coloring
+    this.refresh();
   }
 
   /** Recompute which cells are visible and (re)spawn/despawn memorylessly */
@@ -75,7 +75,7 @@ export class World {
     for (const [k, c] of this.visible) {
       if (!wantedKeys.has(k)) {
         c.rect.remove();
-        c.label?.remove();
+        if (c.label) c.label.remove();
         this.visible.delete(k);
       }
     }
@@ -86,24 +86,27 @@ export class World {
       if (this.visible.has(key)) continue;
 
       // memoryless spawn: random token (30% chance) with values 1..3
-      const token: Token | null = Math.random() < 0.30
+      const token: Token | null = Math.random() < 0.3
         ? { value: 1 + Math.floor(Math.random() * 3) }
         : null;
 
       const b = cellIdToBounds(id, this.state.cellSizeDeg);
-      const rect = L.rectangle([[b.bottom, b.left], [b.top, b.right]], {
-        weight: 1,
-        color: this.isInteractable(id) ? "#56a" : "#bbb",
-        fillColor: token ? "#ffe" : "#f9f9f9",
-        fillOpacity: 0.35,
-      }).addTo(this.cellLayer);
+      const rect = L.rectangle(
+        [[b.bottom, b.left], [b.top, b.right]],
+        {
+          weight: 1,
+          color: this.isInteractable(id) ? "#56a" : "#bbb",
+          fillColor: token ? "#ffe" : "#f9f9f9",
+          fillOpacity: 0.35,
+        },
+      ).addTo(this.cellLayer);
 
       // label showing token value (if any)
-      let label: L.Marker | undefined;
+      let label: L.Marker<any> | null = null;
       if (token) {
-        const center = [(b.bottom + b.top) / 2, (b.left + b.right) / 2] as [
-          number,
-          number,
+        const center: [number, number] = [
+          (b.bottom + b.top) / 2,
+          (b.left + b.right) / 2,
         ];
         label = L.marker(center, {
           interactive: false,
@@ -123,7 +126,9 @@ export class World {
 
     // recolor for interaction radius feedback
     for (const c of this.visible.values()) {
-      c.rect.setStyle({ color: this.isInteractable(c.id) ? "#56a" : "#bbb" });
+      c.rect.setStyle({
+        color: this.isInteractable(c.id) ? "#56a" : "#bbb",
+      });
     }
   }
 
@@ -148,8 +153,10 @@ export class World {
       // remove from cell (memoryless cell can respawn later when offscreen)
       cell.token = null;
       cell.rect.setStyle({ fillColor: "#f9f9f9" });
-      cell.label?.remove();
-      cell.label = undefined;
+      if (cell.label) {
+        cell.label.remove();
+        cell.label = null;
+      }
       status.textContent = "picked up token";
       this.updateHUD();
       return;
@@ -160,9 +167,9 @@ export class World {
       cell.token = this.state.held;
       this.state.held = null;
       const b = cellIdToBounds(cell.id, this.state.cellSizeDeg);
-      const center = [(b.bottom + b.top) / 2, (b.left + b.right) / 2] as [
-        number,
-        number,
+      const center: [number, number] = [
+        (b.bottom + b.top) / 2,
+        (b.left + b.right) / 2,
       ];
       cell.label = L.marker(center, {
         interactive: false,
@@ -182,8 +189,7 @@ export class World {
   }
 
   updateHUD() {
-    const p = document.getElementById("player-ij")!;
-    p.textContent =
+    (document.getElementById("player-ij")!).textContent =
       `i=${this.state.playerCell.i}, j=${this.state.playerCell.j}`;
     (document.getElementById("held")!).textContent = this.state.held
       ? `${this.state.held.value}`
