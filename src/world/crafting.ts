@@ -24,7 +24,6 @@ export function tryCraft(state: GameState): string {
   // consume two tokens of 'target'
   let need = 2;
   const newBag: Token[] = [];
-  let newHeld: Token | null = null;
   const consume = (
     t: Token,
   ): boolean => (t.value === target && need > 0 ? (need--, true) : false);

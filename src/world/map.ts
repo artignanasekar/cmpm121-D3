@@ -1,4 +1,11 @@
-import { L } from "../_leafletWorkaround.ts";
+// src/world/map.ts
+
+// Get Leaflet types directly from the leaflet package, and run the
+// icon workaround file for its side effects.
+// @deno-types="npm:@types/leaflet"
+import * as L from "leaflet";
+import "../_leafletWorkaround.ts";
+
 import {
   cellIdToBounds,
   cellKey,
@@ -102,7 +109,7 @@ export class World {
       ).addTo(this.cellLayer);
 
       // label showing token value (if any)
-      let label: L.Marker<any> | null = null;
+      let label: L.Marker | undefined;
       if (token) {
         const center: [number, number] = [
           (b.bottom + b.top) / 2,
@@ -118,7 +125,7 @@ export class World {
         }).addTo(this.cellLabels);
       }
 
-      const cell: Cell = { id, token, rect, label };
+      const cell = { id, token, rect, label } as Cell;
       this.visible.set(key, cell);
 
       rect.on("click", () => this.onCellClick(cell));
@@ -155,7 +162,7 @@ export class World {
       cell.rect.setStyle({ fillColor: "#f9f9f9" });
       if (cell.label) {
         cell.label.remove();
-        cell.label = null;
+        delete (cell as Partial<Cell>).label;
       }
       status.textContent = "picked up token";
       this.updateHUD();

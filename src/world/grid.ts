@@ -1,20 +1,20 @@
-import { L } from "../_leafletWorkaround.ts";
 import type { CellId, LatLng } from "./state.ts";
 
 export function clampLng(lng: number): number {
+  // keep longitudes in [-180, 180)
   const x = ((lng + 180) % 360 + 360) % 360 - 180;
   return x;
 }
 
 export function latLngToCellId(ll: LatLng, cellSizeDeg: number): CellId {
-  const i = Math.floor(ll.lat / cellSizeDeg);
-  const j = Math.floor(clampLng(ll.lng) / cellSizeDeg);
+  const i = Math.floor((ll.lat - 0) / cellSizeDeg); // anchored at 0 lat (Null Island)
+  const j = Math.floor((clampLng(ll.lng) - 0) / cellSizeDeg); // anchored at 0 lng
   return { i, j };
 }
 
 export function cellIdToBounds(id: CellId, cellSizeDeg: number) {
   const top = (id.i + 1) * cellSizeDeg;
-  const left = id.j * cellSizeDeg;
+  const left = (id.j) * cellSizeDeg;
   const bottom = id.i * cellSizeDeg;
   const right = (id.j + 1) * cellSizeDeg;
   return { top, left: clampLng(left), bottom, right: clampLng(right) };
@@ -28,7 +28,7 @@ export function manhattan(a: CellId, b: CellId): number {
   return Math.abs(a.i - b.i) + Math.abs(a.j - b.j);
 }
 
-/** enumerate all cell ids overlapping a Leaflet LatLngBounds */
+/** enumerate all cell ids overlapping a leaflet LatLngBounds */
 export function enumerateCellsInBounds(
   b: L.LatLngBounds,
   cellSizeDeg: number,
