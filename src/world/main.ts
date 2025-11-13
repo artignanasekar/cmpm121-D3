@@ -248,7 +248,8 @@ function updateCellAppearance(row: number, col: number): void {
     const icon = L.divIcon({
       className: "token-label",
       iconSize: [26, 26],
-      html: `<div>${content.value}</div>`,
+      // inner div so we can center via CSS
+      html: `<div class="token-label-inner">${content.value}</div>`,
     });
 
     if (existingTokenMarker) {
@@ -327,7 +328,7 @@ function movePlayer(deltaRow: number, deltaCol: number): void {
   playerMarker.setLatLng([playerLat, playerLng]);
   map.panTo([playerLat, playerLng], { animate: true });
 
-  // update appearance of nearby cells so the near/far styling stays correct. sizing stays consistent.
+  // update appearance of nearby cells so the near/far styling stays correct.
   for (const k of cellRects.keys()) {
     const [rStr, cStr] = k.split(",");
     const r = Number(rStr);
@@ -336,28 +337,101 @@ function movePlayer(deltaRow: number, deltaCol: number): void {
   }
 }
 
+/** hook up the HUD buttons by their text labels (N, S, E, W, craft, drop). */
+function setupControls(): void {
+  const buttons = Array.from(
+    document.querySelectorAll<HTMLButtonElement>("button"),
+  );
+
+  for (const btn of buttons) {
+    const label = btn.textContent?.trim().toLowerCase();
+    switch (label) {
+      case "n":
+        btn.addEventListener("click", () => movePlayer(1, 0)); // north
+        break;
+      case "s":
+        btn.addEventListener("click", () => movePlayer(-1, 0)); // south
+        break;
+      case "e":
+        btn.addEventListener("click", () => movePlayer(0, 1)); // east
+        break;
+      case "w":
+        btn.addEventListener("click", () => movePlayer(0, -1)); // west
+        break;
+      case "drop":
+        // act like clicking the current cell
+        btn.addEventListener("click", () => {
+          handleCellClick(playerRow, playerCol);
+        });
+        break;
+      case "craft":
+        // for now, same behavior as clicking current cell (you can customize later)
+        btn.addEventListener("click", () => {
+          handleCellClick(playerRow, playerCol);
+        });
+        break;
+    }
+  }
+}
+
 // use globalThis instead of window to keep Deno’s linter happy
 globalThis.addEventListener("keydown", (ev: KeyboardEvent) => {
-  switch (ev.key) {
+  const key = ev.key;
+
+  let handled = true;
+  switch (key) {
+    // north
     case "ArrowUp":
+    case "w":
+    case "W":
+    case "n":
+    case "N":
       movePlayer(1, 0);
       break;
+
+    // south
     case "ArrowDown":
+    case "s":
+    case "S":
+      // (re-using S as "south" and also WASD down)
       movePlayer(-1, 0);
       break;
+
+    // west
     case "ArrowLeft":
+    case "a":
+    case "A":
+    case "west":
+    case "W ":
       movePlayer(0, -1);
       break;
+
+    // east
     case "ArrowRight":
+    case "d":
+    case "D":
+    case "e":
+    case "E":
       movePlayer(0, 1);
       break;
+
+    // space or Enter to interact with current cell (like clicking/drop button)
+    case " ":
+    case "Enter":
+      handleCellClick(playerRow, playerCol);
+      break;
+
     default:
-      return;
+      handled = false;
   }
 
-  ev.preventDefault();
+  if (handled) {
+    ev.preventDefault();
+  }
 });
 
+// initial setup
 updateVisibleCells();
 scoreEl.textContent = String(score);
 holdingEl.textContent = "nothing";
+setupControls();
