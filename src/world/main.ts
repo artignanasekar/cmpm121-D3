@@ -3,7 +3,7 @@ import { latLngToCellId } from "./grid.ts";
 import { World } from "./map.ts";
 import type { GameState } from "./state.ts";
 
-// initial game state 
+// initial game state
 const state: GameState = {
   cellSizeDeg: 0.002, // denser than 0.01, tweak to after implementing movement
   interactRadius: 3, // cells (Manhattan)
